@@ -1,0 +1,24 @@
+# Node.js dependencies
+node_modules/
+
+# Build artifacts
+dist/
+frontend/dist/
+backend/videoprocessor
+
+deploy/
+
+# Environment files
+config.env
+config.json
+
+# System files
+.DS_Store
+*.log
+
+# Temporary files
+tmp/
+*.tmp
+
+# Docker and LXC
+*.tar.gz

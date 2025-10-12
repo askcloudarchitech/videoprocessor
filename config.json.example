@@ -1,0 +1,52 @@
+{
+  "destinationConfig": {
+    "type": "nfs",
+    "path": "/media/nfs/video_archive"
+  },
+  "sdCardMappings": {
+    "Insta360GO3": {
+      "name": "Insta360GO3",
+      "sourceDirs": [
+        "DCIM/Camera01"
+      ],
+      "destination": "RecentImports/insta360go"
+    },
+    "OSMO": {
+      "name": "OSMO",
+      "sourceDirs": [
+        "DCIM/DJI_001"
+      ],
+      "destination": "RecentImports/djiosmo"
+    },
+    "InstaX4": {
+      "name": "InstaX4",
+      "sourceDirs": [
+        "DCIM/Camera01"
+      ],
+      "destination": "RecentImports/instaX4"
+    },
+    "ZVE10": {
+      "name": "ZVE10",
+      "sourceDirs": [
+        "DCIM/100MSDCF",
+        "PRIVATE/M4ROOT/CLIP"
+      ],
+      "destination": "RecentImports/sonyZVE"
+    },
+    "BAMBU": {
+      "name": "BAMBU",
+      "sourceDirs": [
+        "timelapse"
+      ],
+      "destination": "RecentImports/BAMBU"
+    }
+  },
+  "ignoredExtensions": [
+    ".tmp",
+    ".log",
+    ".dat",
+    ".lrv",
+    ".LRF"
+  ],
+  "timezone": "America/New_York"
+}
