@@ -15,6 +15,7 @@ config.json
 # System files
 .DS_Store
 *.log
+.vscode/
 
 # Temporary files
 tmp/
