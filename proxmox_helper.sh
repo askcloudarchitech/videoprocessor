@@ -4,10 +4,20 @@ set -e
 
 # Load configuration from external file
 if [ ! -f "config.env" ]; then
-  echo "Error: config.env file not found. Please create one based on config.env.example."
+  echo "config.env not found. Generating default config.env from config.env.example..."
+  cp config.env.example config.env
+  echo "Please edit the generated config.env file to match your environment before proceeding."
   exit 1
 fi
 source config.env
+
+# Ensure config.json exists
+if [ ! -f "config.json" ]; then
+  echo "config.json not found. Generating default config.json from config.json.example..."
+  cp config.json.example config.json
+  echo "Please edit the generated config.json file to match your environment before proceeding."
+  exit 1
+fi
 
 # Fetch the latest version of the repository
 if [ ! -d "/root/videoprocessor" ]; then
@@ -43,17 +53,11 @@ pct exec 100 -- bash -c "\
   echo '$NFS_SERVER:$NFS_PATH $NFS_MOUNT nfs defaults 0 0' >> /etc/fstab && \
   mount -a"
 
-# Ensure the config.json file is stored on a permanent mounted storage location
-CONFIG_MOUNT="/mnt/config"
-
-# Check if the config mount exists
-if [ ! -d "$CONFIG_MOUNT" ]; then
-  echo "Error: Config mount $CONFIG_MOUNT does not exist. Please ensure it is mounted."
-  exit 1
-fi
+# Copy application files to the container
+pct push 100 ./deploy /root/deploy --recursive
 
 # Copy external config.json to the container
-pct push 100 "$CONFIG_MOUNT/config.json" /root/deploy/config.json
+pct push 100 ./config.json /root/deploy/config.json
 
 # Set up the application as a systemd service
 pct exec 100 -- bash -c "\
