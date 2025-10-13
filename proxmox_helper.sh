@@ -6,6 +6,15 @@ set -e
 DEFAULT_BRANCH="main"
 REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.tar.gz"
 
+# Function to find the next available VM ID
+find_next_vm_id() {
+  local id=100
+  while pct status $id &>/dev/null; do
+    id=$((id + 1))
+  done
+  echo $id
+}
+
 # Backup existing config files if they exist
 if [ -f "/root/videoprocessor/config.env" ]; then
   echo "Backing up existing config.env..."
@@ -59,8 +68,11 @@ if [ ! -f "config.json" ]; then
   exit 1
 fi
 
+# Find the next available VM ID
+VM_ID=$(find_next_vm_id)
+
 # Create LXC container
-pct create 100 local:vztmpl/$TEMPLATE.tar.gz \
+pct create $VM_ID local:vztmpl/$TEMPLATE.tar.gz \
   -hostname "$CONTAINER_NAME" \
   -storage "$STORAGE" \
   -net0 name=eth0,bridge=vmbr0,ip=dhcp \
@@ -69,10 +81,10 @@ pct create 100 local:vztmpl/$TEMPLATE.tar.gz \
   -cores 2
 
 # Start the container
-pct start 100
+pct start $VM_ID
 
 # Install dependencies inside the container
-pct exec 100 -- bash -c "\
+pct exec $VM_ID -- bash -c "\
   apt-get update && \
   apt-get install -y curl build-essential golang nodejs npm nfs-common && \
   npm install -g esbuild && \
@@ -81,19 +93,19 @@ pct exec 100 -- bash -c "\
   mount -a"
 
 # Copy application files to the container
-pct push 100 ./deploy /root/deploy --recursive
+pct push $VM_ID ./deploy /root/deploy --recursive
 
 # Copy external config.json to the container
-pct push 100 ./config.json /root/deploy/config.json
+pct push $VM_ID ./config.json /root/deploy/config.json
 
 # Pass the NFS_MOUNT environment variable to the application
-pct exec 100 -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
+pct exec $VM_ID -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
 
 # Set up the application as a systemd service
-pct exec 100 -- bash -c "\
+pct exec $VM_ID -- bash -c "\
   mv /root/deploy/videoprocessor.service /etc/systemd/system/videoprocessor.service && \
   systemctl enable videoprocessor && \
   systemctl start videoprocessor"
 
 # Output success message
-echo "LXC container '$CONTAINER_NAME' has been set up successfully."
+echo "LXC container '$CONTAINER_NAME' has been set up successfully with VM ID $VM_ID."
