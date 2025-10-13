@@ -361,12 +361,6 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// RegisterConfigRoutes registers the configuration-related API endpoints.
-func RegisterConfigRoutes() {
-	http.HandleFunc("/api/config", FetchConfig)
-	http.HandleFunc("/api/config/update", UpdateConfig)
-}
-
 // StartServer starts the combined HTTP server for the REST API and web interface.
 func StartServer() {
 	// Serve static files from the frontend/dist directory
@@ -387,6 +381,8 @@ func StartServer() {
 	http.HandleFunc("/api/move", MoveFiles)
 	http.HandleFunc("/api/reprocess", ReprocessProxies)
 	http.HandleFunc("/api/delete", DeleteVideo)
+	http.HandleFunc("/api/config", FetchConfig)
+	http.HandleFunc("/api/config/update", UpdateConfig)
 
 	// Fallback to index.html for React app routes
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
