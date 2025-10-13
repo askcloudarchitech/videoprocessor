@@ -4,15 +4,40 @@ set -e
 
 # Default branch name
 DEFAULT_BRANCH="main"
+REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.zip"
 
-# Ensure the repository is cloned before generating config files
-if [ ! -d "/root/videoprocessor" ]; then
-  echo "Cloning the repository..."
-  git clone --branch "$DEFAULT_BRANCH" "https://github.com/askcloudarchitech/videoprocessor.git" /root/videoprocessor
-else
-  echo "Repository already cloned. Pulling latest changes..."
-  cd /root/videoprocessor
-  git pull origin "$DEFAULT_BRANCH"
+# Backup existing config files if they exist
+if [ -f "/root/videoprocessor/config.env" ]; then
+  echo "Backing up existing config.env..."
+  cp /root/videoprocessor/config.env /tmp/config.env.backup
+fi
+
+if [ -f "/root/videoprocessor/config.json" ]; then
+  echo "Backing up existing config.json..."
+  cp /root/videoprocessor/config.json /tmp/config.json.backup
+fi
+
+# Always re-download the repository to ensure updates
+if [ -d "/root/videoprocessor" ]; then
+  echo "Removing old repository..."
+  rm -rf /root/videoprocessor
+fi
+
+echo "Downloading the repository..."
+curl -L "$REPO_URL" -o /tmp/videoprocessor.zip
+unzip /tmp/videoprocessor.zip -d /tmp/
+mv /tmp/videoprocessor-$DEFAULT_BRANCH /root/videoprocessor
+rm /tmp/videoprocessor.zip
+
+# Restore backed-up config files
+if [ -f "/tmp/config.env.backup" ]; then
+  echo "Restoring config.env..."
+  mv /tmp/config.env.backup /root/videoprocessor/config.env
+fi
+
+if [ -f "/tmp/config.json.backup" ]; then
+  echo "Restoring config.json..."
+  mv /tmp/config.json.backup /root/videoprocessor/config.json
 fi
 
 cd /root/videoprocessor
@@ -49,7 +74,7 @@ pct start 100
 # Install dependencies inside the container
 pct exec 100 -- bash -c "\
   apt-get update && \
-  apt-get install -y curl git build-essential golang nodejs npm nfs-common && \
+  apt-get install -y curl build-essential golang nodejs npm nfs-common && \
   npm install -g esbuild && \
   mkdir -p $NFS_MOUNT && \
   echo '$NFS_SERVER:$NFS_PATH $NFS_MOUNT nfs defaults 0 0' >> /etc/fstab && \
@@ -62,7 +87,7 @@ pct push 100 ./deploy /root/deploy --recursive
 pct push 100 ./config.json /root/deploy/config.json
 
 # Pass the NFS_MOUNT environment variable to the application
-Environment="NFS_MOUNT=$NFS_MOUNT"
+pct exec 100 -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
 
 # Set up the application as a systemd service
 pct exec 100 -- bash -c "\
