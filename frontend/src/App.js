@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import ConfigEditor from "./pages/ConfigEditor";
 
 function App() {
   const [videos, setVideos] = useState([]);
@@ -95,88 +97,12 @@ function App() {
   };
 
   return (
-    <Container>
-      <Box>
-        <Typography variant="h4">Unmoved Videos</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Select</TableCell>
-                <TableCell>Preview</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {videos.map((video) => (
-                <TableRow key={video.original}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedFiles.includes(video.original)}
-                      onChange={() => handleFileSelect(video.original)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {video.proxy ? (
-                      <VideoPreview proxy={video.proxy} />
-                    ) : (
-                      <Typography>No proxy available</Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleDeleteVideo(video.original, video.proxy)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-      <Box>
-        <Typography variant="h6">Destination Folder</Typography>
-        <Select
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-          fullWidth
-        >
-          {destinations.map((dest) => (
-            <MenuItem key={dest} value={dest}>
-              {dest}
-            </MenuItem>
-          ))}
-        </Select>
-        <TextField
-          label="Or create a new folder"
-          value={newFolder}
-          onChange={(e) => setNewFolder(e.target.value)}
-          fullWidth
-        />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleMoveFiles}
-          disabled={!selectedFiles.length || (!destination && !newFolder)}
-        >
-          Move Selected Videos
-        </Button>
-      </Box>
-      <Box>
-        <Typography variant="h6">Actions</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleReprocessProxies}
-        >
-          Reprocess Proxies
-        </Button>
-      </Box>
-    </Container>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/config" element={<ConfigEditor />} />
+      </Routes>
+    </Router>
   );
 }
 

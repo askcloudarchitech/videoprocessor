@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,6 +25,8 @@ type ProxyFile struct {
 	Proxy           string `json:"proxy"`
 	DisplayOriginal string // Field for the original path with the prefix removed
 }
+
+var configLock sync.Mutex // To ensure thread-safe updates to the config file
 
 // loadConfig loads the configuration from a JSON file.
 func loadConfig(filePath string) error {
@@ -145,6 +149,14 @@ func CreateDestination(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Folder created: %s", newFolderPath)
 }
 
+// verifyFileExists checks if a file exists at the given path.
+func verifyFileExists(filePath string) bool {
+	if _, err := os.Stat(filePath); err == nil {
+		return true
+	}
+	return false
+}
+
 // MoveFiles moves the original and proxy files to the selected destination folder.
 func MoveFiles(w http.ResponseWriter, r *http.Request) {
 	var request struct {
@@ -189,6 +201,12 @@ func MoveFiles(w http.ResponseWriter, r *http.Request) {
 		destinationFilePath := filepath.Join(destinationPath, filepath.Base(file))
 		if err := os.Rename(sourcePath, destinationFilePath); err != nil {
 			http.Error(w, fmt.Sprintf("Error moving file %s: %v", file, err), http.StatusInternalServerError)
+			return
+		}
+
+		// Verify the file exists at the destination before deleting the source
+		if !verifyFileExists(destinationFilePath) {
+			http.Error(w, fmt.Sprintf("File %s not found at destination after move", file), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -284,6 +302,69 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	logReceiver.Log("Deleted video: %s and proxy: %s", request.Original, request.Proxy)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "Video and proxy deleted successfully")
+}
+
+// FetchConfig handles fetching the current configuration.
+func FetchConfig(w http.ResponseWriter, r *http.Request) {
+	configLock.Lock()
+	defer configLock.Unlock()
+
+	configData, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		http.Error(w, "Failed to read configuration", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(configData)
+}
+
+// UpdateConfig handles updating the configuration.
+func UpdateConfig(w http.ResponseWriter, r *http.Request) {
+	var newConfig Config
+	if err := json.NewDecoder(r.Body).Decode(&newConfig); err != nil {
+		http.Error(w, "Invalid configuration format", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the new configuration
+	if newConfig.DestinationConfig.Type != "nfs" && newConfig.DestinationConfig.Type != "local" {
+		http.Error(w, "Invalid destination type", http.StatusBadRequest)
+		return
+	}
+	if newConfig.Timezone == "" {
+		http.Error(w, "Timezone cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Save the new configuration
+	configLock.Lock()
+	defer configLock.Unlock()
+
+	configData, err := json.MarshalIndent(newConfig, "", "  ")
+	if err != nil {
+		http.Error(w, "Failed to serialize configuration", http.StatusInternalServerError)
+		return
+	}
+
+	if err := ioutil.WriteFile("config.json", configData, 0644); err != nil {
+		http.Error(w, "Failed to save configuration", http.StatusInternalServerError)
+		return
+	}
+
+	// Reload the configuration in memory
+	if err := loadConfig("config.json"); err != nil {
+		http.Error(w, "Failed to reload configuration", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// RegisterConfigRoutes registers the configuration-related API endpoints.
+func RegisterConfigRoutes() {
+	http.HandleFunc("/api/config", FetchConfig)
+	http.HandleFunc("/api/config/update", UpdateConfig)
 }
 
 // StartServer starts the combined HTTP server for the REST API and web interface.

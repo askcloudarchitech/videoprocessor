@@ -299,6 +299,26 @@ func processSDCard(label string) {
 			return
 		}
 
+		// Verify files exist before clearing the SD card
+		for _, sourceDir := range sdCard.SourceDirs {
+			sdCardPath := filepath.Join("/media/videoserver", sdCard.Name, sourceDir)
+			files, err := os.ReadDir(sdCardPath)
+			if err != nil {
+				logReceiver.Log("Error reading directory %s: %v", sdCardPath, err)
+				continue
+			}
+
+			for _, file := range files {
+				if !file.IsDir() {
+					destinationFilePath := filepath.Join(sdCard.Destination, file.Name())
+					if !verifyFileExists(destinationFilePath) {
+						logReceiver.Log("File %s not found at destination %s", file.Name(), destinationFilePath)
+						return
+					}
+				}
+			}
+		}
+
 		if err := clearSDCard(sdCard); err != nil {
 			logReceiver.Log("%v", err)
 			return
