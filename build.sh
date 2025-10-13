@@ -24,7 +24,7 @@ node esbuild.js # Ensure the script is run from the correct directory
 # Step 3: Build the Go backend
 echo "Building Go backend..."
 cd backend
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "../$DEPLOY_DIR/videoprocessor" main.go web.go sdcard.go
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "../videoprocessor" main.go web.go sdcard.go
 cd ..
 
 # Step 4: Prepare deployment directory
@@ -37,8 +37,8 @@ mkdir -p "$DEPLOY_DIR"
 # Copy frontend build to deployment directory
 cp -r "$DIST_DIR" "$DEPLOY_DIR/frontend"
 
-# Copy configuration files to deployment directory
-cp config.json "$DEPLOY_DIR/"
+cp videoprocessor "$DEPLOY_DIR/"
+cp videoprocessor.service "$DEPLOY_DIR/"
 
 # Deployment package is ready
 echo "Deployment package is ready in the '$DEPLOY_DIR' directory."
