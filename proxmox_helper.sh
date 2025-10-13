@@ -4,7 +4,7 @@ set -e
 
 # Default branch name
 DEFAULT_BRANCH="main"
-REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.zip"
+REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.tar.gz"
 
 # Backup existing config files if they exist
 if [ -f "/root/videoprocessor/config.env" ]; then
@@ -24,10 +24,10 @@ if [ -d "/root/videoprocessor" ]; then
 fi
 
 echo "Downloading the repository..."
-curl -L "$REPO_URL" -o /tmp/videoprocessor.zip
-unzip /tmp/videoprocessor.zip -d /tmp/
+curl -L "$REPO_URL" -o /tmp/videoprocessor.tar.gz
+tar -xzf /tmp/videoprocessor.tar.gz -C /tmp/
 mv /tmp/videoprocessor-$DEFAULT_BRANCH /root/videoprocessor
-rm /tmp/videoprocessor.zip
+rm /tmp/videoprocessor.tar.gz
 
 # Restore backed-up config files
 if [ -f "/tmp/config.env.backup" ]; then
