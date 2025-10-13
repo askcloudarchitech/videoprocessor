@@ -2,6 +2,21 @@
 
 set -e
 
+# Default branch name
+DEFAULT_BRANCH="main"
+
+# Ensure the repository is cloned before generating config files
+if [ ! -d "/root/videoprocessor" ]; then
+  echo "Cloning the repository..."
+  git clone --branch "$DEFAULT_BRANCH" "https://github.com/askcloudarchitech/videoprocessor.git" /root/videoprocessor
+else
+  echo "Repository already cloned. Pulling latest changes..."
+  cd /root/videoprocessor
+  git pull origin "$DEFAULT_BRANCH"
+fi
+
+cd /root/videoprocessor
+
 # Load configuration from external file
 if [ ! -f "config.env" ]; then
   echo "config.env not found. Generating default config.env from config.env.example..."
@@ -18,19 +33,6 @@ if [ ! -f "config.json" ]; then
   echo "Please edit the generated config.json file to match your environment before proceeding."
   exit 1
 fi
-
-# Fetch the latest version of the repository
-if [ ! -d "/root/videoprocessor" ]; then
-  echo "Cloning the repository..."
-  git clone --branch "$BRANCH" "$REPO_URL" /root/videoprocessor
-else
-  echo "Updating the repository..."
-  cd /root/videoprocessor
-  git pull origin "$BRANCH"
-fi
-
-# Change to the project directory
-cd /root/videoprocessor
 
 # Create LXC container
 pct create 100 local:vztmpl/$TEMPLATE.tar.gz \
