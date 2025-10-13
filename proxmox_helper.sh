@@ -59,6 +59,9 @@ pct push 100 ./deploy /root/deploy --recursive
 # Copy external config.json to the container
 pct push 100 ./config.json /root/deploy/config.json
 
+# Pass the NFS_MOUNT environment variable to the application
+Environment="NFS_MOUNT=$NFS_MOUNT"
+
 # Set up the application as a systemd service
 pct exec 100 -- bash -c "\
   mv /root/deploy/videoprocessor.service /etc/systemd/system/videoprocessor.service && \

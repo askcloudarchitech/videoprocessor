@@ -55,17 +55,6 @@ func loadConfig(filePath string) error {
 	return nil
 }
 
-// getDestinationPath returns the full destination path based on the configuration.
-func getDestinationPath(subPath string) (string, error) {
-	if destinationConfig.Type == "nfs" {
-		return filepath.Join(destinationConfig.Path, subPath), nil
-	} else if destinationConfig.Type == "local" {
-		return filepath.Join(destinationConfig.Path, subPath), nil
-	} else {
-		return "", fmt.Errorf("unsupported destination type: %s", destinationConfig.Type)
-	}
-}
-
 // ListProxyFiles lists all files in the destination directories, including those without proxies.
 func ListProxyFiles(w http.ResponseWriter, r *http.Request) {
 	var proxies []ProxyFile

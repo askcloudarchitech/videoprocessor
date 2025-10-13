@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import ConfigEditor from "./pages/ConfigEditor";
+import HomePage from "./pages/HomePage";
 
 function App() {
   const [videos, setVideos] = useState([]);
@@ -99,7 +100,24 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/"
+          element={
+            <HomePage
+              videos={videos}
+              destinations={destinations}
+              selectedFiles={selectedFiles}
+              destination={destination}
+              newFolder={newFolder}
+              handleFileSelect={handleFileSelect}
+              handleMoveFiles={handleMoveFiles}
+              handleDeleteVideo={handleDeleteVideo}
+              handleReprocessProxies={handleReprocessProxies}
+              setDestination={setDestination}
+              setNewFolder={setNewFolder}
+            />
+          }
+        />
         <Route path="/config" element={<ConfigEditor />} />
       </Routes>
     </Router>

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -139,6 +140,21 @@ func (lr *LogReceiver) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 var logReceiver = NewLogReceiver()
+
+// Global variable to store the NFS mount path
+var nfsMountPath string
+
+func init() {
+	nfsMountPath = os.Getenv("NFS_MOUNT")
+	if nfsMountPath == "" {
+		log.Fatalf("NFS_MOUNT environment variable is not set. Please configure it in config.env.")
+	}
+}
+
+// Updated getDestinationPath to use the dynamic NFS mount path
+func getDestinationPath(subPath string) (string, error) {
+	return filepath.Join(nfsMountPath, "video_archive", subPath), nil
+}
 
 // checkAndMountNFS checks if the NFS mount is established and mounts it if necessary.
 func checkAndMountNFS() error {
