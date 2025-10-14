@@ -21,7 +21,8 @@ find_next_vm_id() {
 # Ensure the required template is available
 ensure_template() {
   local template_name="$1"
-  if ! pveam list local | grep -q "$template_name"; then
+  echo "Checking for template: $template_name"
+  if ! pveam list local | grep -Fq "$template_name"; then
     echo "Template $template_name not found. Downloading..."
     pveam update
     pveam download local "$template_name"
