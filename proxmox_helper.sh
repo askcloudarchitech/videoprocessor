@@ -28,17 +28,14 @@ find_next_vm_id() {
 
 # Ensure the required template is available
 ensure_template() {
-  local template_name="$1"
-  echo "ensure_template called with raw argument: $1"
-  echo "Debug: Value of template_name after assignment: $template_name"
-  echo "Checking for template: $template_name"
-  echo "Debug: TEMPLATE variable inside function is: $TEMPLATE"
-  if ! pveam list local | awk '{print $2}' | grep -Fxq "$template_name"; then
-    echo "Template $template_name not found. Downloading..."
+  echo "ensure_template called with TEMPLATE: '$TEMPLATE'"
+  echo "Checking for template: '$TEMPLATE'"
+  if ! pveam list local | awk '{print $2}' | grep -Fxq "$TEMPLATE"; then
+    echo "Template $TEMPLATE not found. Downloading..."
     pveam update
-    pveam download local "$template_name"
+    pveam download local "$TEMPLATE"
   else
-    echo "Template $template_name is already available."
+    echo "Template $TEMPLATE is already available."
   fi
 }
 
