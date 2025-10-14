@@ -6,6 +6,9 @@ set -e
 DEFAULT_BRANCH="main"
 REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.tar.gz"
 
+# Default template name
+TEMPLATE="debian-11-standard_11.0-1_amd64.tar.gz"
+
 # Function to find the next available VM ID
 find_next_vm_id() {
   local id=100
@@ -13,6 +16,18 @@ find_next_vm_id() {
     id=$((id + 1))
   done
   echo $id
+}
+
+# Ensure the required template is available
+ensure_template() {
+  local template_name="$1"
+  if ! pveam list local | grep -q "$template_name"; then
+    echo "Template $template_name not found. Downloading..."
+    pveam update
+    pveam download local "$template_name"
+  else
+    echo "Template $template_name is already available."
+  fi
 }
 
 # Backup existing config files if they exist
@@ -70,6 +85,9 @@ fi
 
 # Find the next available VM ID
 VM_ID=$(find_next_vm_id)
+
+# Call ensure_template before creating the container
+ensure_template "$TEMPLATE"
 
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE.tar.gz \
