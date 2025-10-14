@@ -42,6 +42,12 @@ ensure_template() {
   fi
 }
 
+# Debugging TEMPLATE value before function call
+echo "Debug: TEMPLATE value before calling ensure_template: $TEMPLATE"
+
+# Call ensure_template before creating the container
+ensure_template "$TEMPLATE"
+
 # Backup existing config files if they exist
 if [ -f "/root/videoprocessor/config.env" ]; then
   echo "Backing up existing config.env..."
