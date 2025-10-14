@@ -7,7 +7,7 @@ DEFAULT_BRANCH="main"
 REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads/$DEFAULT_BRANCH.tar.gz"
 
 # Default template name
-TEMPLATE="debian-11-standard_11.0-1_amd64.tar.gz"
+TEMPLATE="debian-11-standard_11.7-1_amd64.tar.zst"
 
 # Function to find the next available VM ID
 find_next_vm_id() {
