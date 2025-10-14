@@ -9,6 +9,14 @@ REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads
 # Default template name
 TEMPLATE="debian-11-standard_11.7-1_amd64.tar.zst"
 
+# Debugging TEMPLATE value
+if [ -z "$TEMPLATE" ]; then
+  echo "TEMPLATE variable is not set. Exiting."
+  exit 1
+else
+  echo "TEMPLATE variable is set to: $TEMPLATE"
+fi
+
 # Function to find the next available VM ID
 find_next_vm_id() {
   local id=100
@@ -22,7 +30,7 @@ find_next_vm_id() {
 ensure_template() {
   local template_name="$1"
   echo "Checking for template: $template_name"
-  if ! pveam list local | grep -Fq "$template_name"; then
+  if ! pveam list local | awk '{print $2}' | grep -Fxq "$template_name"; then
     echo "Template $template_name not found. Downloading..."
     pveam update
     pveam download local "$template_name"
