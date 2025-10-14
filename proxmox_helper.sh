@@ -90,7 +90,7 @@ VM_ID=$(find_next_vm_id)
 ensure_template "$TEMPLATE"
 
 # Create LXC container
-pct create $VM_ID local:vztmpl/$TEMPLATE.tar.gz \
+pct create $VM_ID local:vztmpl/$TEMPLATE \
   -hostname "$CONTAINER_NAME" \
   -storage "$STORAGE" \
   -net0 name=eth0,bridge=vmbr0,ip=dhcp \
