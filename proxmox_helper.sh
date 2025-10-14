@@ -9,7 +9,7 @@ REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads
 # Function to find the next available VM ID
 find_next_vm_id() {
   local id=100
-  while pct status $id &>/dev/null; do
+  while [ -e "/etc/pve/lxc/$id.conf" ] || [ -e "/etc/pve/qemu-server/$id.conf" ]; do
     id=$((id + 1))
   done
   echo $id
