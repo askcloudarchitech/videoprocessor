@@ -42,6 +42,18 @@ ensure_template() {
 # Debugging TEMPLATE value before function call
 echo "Debug: TEMPLATE value before calling ensure_template: $TEMPLATE"
 
+# Check if a container with the name already exists
+existing_vm_id=$(pct list | awk -v name="$CONTAINER_NAME" '$3 == name {print $1}')
+
+if [ -n "$existing_vm_id" ]; then
+  echo "Container with name $CONTAINER_NAME already exists (VM ID: $existing_vm_id). Replacing it..."
+  pct stop $existing_vm_id
+  pct destroy $existing_vm_id
+fi
+
+# Find the next available VM ID
+VM_ID=$(find_next_vm_id)
+
 # Call ensure_template before creating the container
 ensure_template "$TEMPLATE"
 
@@ -97,12 +109,6 @@ if [ ! -f "config.json" ]; then
   echo "Please edit the generated config.json file to match your environment before proceeding."
   exit 1
 fi
-
-# Find the next available VM ID
-VM_ID=$(find_next_vm_id)
-
-# Call ensure_template before creating the container
-ensure_template "$TEMPLATE"
 
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE \
