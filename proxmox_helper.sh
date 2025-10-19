@@ -9,14 +9,6 @@ REPO_URL="https://github.com/askcloudarchitech/videoprocessor/archive/refs/heads
 # Default template name
 TEMPLATE="debian-11-standard_11.7-1_amd64.tar.zst"
 
-# Debugging TEMPLATE value
-if [ -z "$TEMPLATE" ]; then
-  echo "TEMPLATE variable is not set. Exiting."
-  exit 1
-else
-  echo "TEMPLATE variable is set to: $TEMPLATE"
-fi
-
 # Function to find the next available VM ID
 find_next_vm_id() {
   local id=100
@@ -38,38 +30,6 @@ ensure_template() {
     echo "Template $TEMPLATE is already available."
   fi
 }
-
-# Debugging TEMPLATE value before function call
-echo "Debug: TEMPLATE value before calling ensure_template: $TEMPLATE"
-
-# Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
-if [ ! -f "config.env" ]; then
-  echo "config.env not found. Generating default config.env from config.env.example..."
-  cp config.env.example config.env
-  echo "Please edit the generated config.env file to match your environment before proceeding."
-  exit 1
-fi
-source config.env
-
-# Ensure config.json exists early as well
-if [ ! -f "config.json" ]; then
-  echo "config.json not found. Generating default config.json from config.json.example..."
-  cp config.json.example config.json
-  echo "Please edit the generated config.json file to match your environment before proceeding."
-  exit 1
-fi
-
-# Check if a container with the name already exists
-existing_vm_id=$(pct list | awk -v name="$CONTAINER_NAME" '$3 == name {print $1}')
-
-if [ -n "$existing_vm_id" ]; then
-  echo "Container with name $CONTAINER_NAME already exists (VM ID: $existing_vm_id). Replacing it..."
-  pct stop $existing_vm_id
-  pct destroy $existing_vm_id
-fi
-
-# Find the next available VM ID
-VM_ID=$(find_next_vm_id)
 
 # Call ensure_template before creating the container
 ensure_template "$TEMPLATE"
@@ -108,11 +68,45 @@ if [ -f "/tmp/config.json.backup" ]; then
   mv /tmp/config.json.backup /root/videoprocessor/config.json
 fi
 
+# Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
+if [ ! -f "config.env" ]; then
+  echo "config.env not found. Generating default config.env from config.env.example..."
+  cp config.env.example config.env
+  echo "Please edit the generated config.env file to match your environment before proceeding."
+  exit 1
+fi
+source config.env
+
+# Ensure config.json exists early as well
+if [ ! -f "config.json" ]; then
+  echo "config.json not found. Generating default config.json from config.json.example..."
+  cp config.json.example config.json
+  echo "Please edit the generated config.json file to match your environment before proceeding."
+  exit 1
+fi
+
+# Check if a container with the name already exists
+existing_vm_id=$(pct list | awk -v name="$CONTAINER_NAME" '$3 == name {print $1}')
+
+if [ -n "$existing_vm_id" ]; then
+  echo "Container with name $CONTAINER_NAME already exists (VM ID: $existing_vm_id). Replacing it..."
+  pct stop $existing_vm_id
+  pct destroy $existing_vm_id
+fi
+
+# Find the next available VM ID
+VM_ID=$(find_next_vm_id)
+
 cd /root/videoprocessor
 
-# Remove any old direct NFS mount attempt from the LXC container configuration
-container_config="/etc/pve/lxc/$VM_ID.conf"
-sed -i '/mp0:/d' "$container_config"
+# Run the build script to prepare the deployment package
+if [ -x "./build.sh" ]; then
+  echo "Running build.sh to prepare the deployment package..."
+  ./build.sh
+else
+  echo "Error: build.sh is not executable or not found. Please ensure it exists and is executable."
+  exit 1
+fi
 
 # Add the NFS share to /etc/fstab on the Proxmox host
 fstab_entry="$NFS_SERVER:$NFS_PATH /mnt/$CONTAINER_NAME-nfs nfs defaults 0 0"
@@ -124,14 +118,8 @@ else
   echo "NFS share is already in /etc/fstab."
 fi
 
-# Add a bind mount to the LXC container configuration
-bind_mount="mp0: /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT"
-if ! grep -Fxq "$bind_mount" "$container_config"; then
-  echo "Adding bind mount to container configuration: $container_config"
-  echo "$bind_mount" >> "$container_config"
-else
-  echo "Bind mount is already in the container configuration."
-fi
+# Add a bind mount to the LXC container using the standard `pct set` command
+pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT
 
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE \
@@ -145,18 +133,14 @@ pct create $VM_ID local:vztmpl/$TEMPLATE \
 # Start the container
 pct start $VM_ID
 
+# Push application files to the container before executing commands
+pct push $VM_ID ./deploy /root/deploy --recursive
+pct push $VM_ID ./config.json /root/deploy/config.json
+
 # Install dependencies inside the container
 pct exec $VM_ID -- bash -c "\
   apt-get update && \
-  apt-get install -y curl build-essential golang nodejs npm nfs-common && \
-  npm install -g esbuild && \
-  mkdir -p $NFS_MOUNT"
-
-# Copy application files to the container
-pct push $VM_ID ./deploy /root/deploy --recursive
-
-# Copy external config.json to the container
-pct push $VM_ID ./config.json /root/deploy/config.json
+  apt-get install -y curl build-essential golang nodejs npm nfs-common"
 
 # Pass the NFS_MOUNT environment variable to the application
 pct exec $VM_ID -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"

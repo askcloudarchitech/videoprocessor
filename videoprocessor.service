@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/path/to/deploy/videoprocessor
-WorkingDirectory=/path/to/deploy
+ExecStart=/root/deploy/videoprocessor
+WorkingDirectory=/root/deploy
 Restart=always
 RestartSec=5s
-Environment=CONFIG_PATH=/path/to/deploy/config.json
+Environment=CONFIG_PATH=/root/deploy/config.json
 
 [Install]
 WantedBy=multi-user.target
