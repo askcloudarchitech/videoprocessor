@@ -102,6 +102,7 @@ VM_ID=$(find_next_vm_id)
 # Run the build script to prepare the deployment package
 if [ -x "./build.sh" ]; then
   echo "Running build.sh to prepare the deployment package..."
+  chmod u+x ./build.sh
   ./build.sh
 else
   echo "Error: build.sh is not executable or not found. Please ensure it exists and is executable."
