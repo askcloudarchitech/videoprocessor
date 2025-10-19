@@ -42,6 +42,23 @@ ensure_template() {
 # Debugging TEMPLATE value before function call
 echo "Debug: TEMPLATE value before calling ensure_template: $TEMPLATE"
 
+# Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
+if [ ! -f "config.env" ]; then
+  echo "config.env not found. Generating default config.env from config.env.example..."
+  cp config.env.example config.env
+  echo "Please edit the generated config.env file to match your environment before proceeding."
+  exit 1
+fi
+source config.env
+
+# Ensure config.json exists early as well
+if [ ! -f "config.json" ]; then
+  echo "config.json not found. Generating default config.json from config.json.example..."
+  cp config.json.example config.json
+  echo "Please edit the generated config.json file to match your environment before proceeding."
+  exit 1
+fi
+
 # Check if a container with the name already exists
 existing_vm_id=$(pct list | awk -v name="$CONTAINER_NAME" '$3 == name {print $1}')
 
@@ -92,23 +109,6 @@ if [ -f "/tmp/config.json.backup" ]; then
 fi
 
 cd /root/videoprocessor
-
-# Load configuration from external file
-if [ ! -f "config.env" ]; then
-  echo "config.env not found. Generating default config.env from config.env.example..."
-  cp config.env.example config.env
-  echo "Please edit the generated config.env file to match your environment before proceeding."
-  exit 1
-fi
-source config.env
-
-# Ensure config.json exists
-if [ ! -f "config.json" ]; then
-  echo "config.json not found. Generating default config.json from config.json.example..."
-  cp config.json.example config.json
-  echo "Please edit the generated config.json file to match your environment before proceeding."
-  exit 1
-fi
 
 # Remove any old direct NFS mount attempt from the LXC container configuration
 container_config="/etc/pve/lxc/$VM_ID.conf"
