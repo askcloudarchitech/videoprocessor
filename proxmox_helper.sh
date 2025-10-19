@@ -139,8 +139,19 @@ pct exec $VM_ID -- bash -c "\
 # Pass the NFS_MOUNT environment variable to the application
 pct exec $VM_ID -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
 
-# Copy the source code into the container
-pct push $VM_ID ./ /root --recursive
+# Create a tarball of the source code
+source_tarball="/tmp/source.tar.gz"
+echo "Creating tarball of the source code at $source_tarball..."
+tar -czf "$source_tarball" .
+
+# Push the tarball into the container
+pct push $VM_ID "$source_tarball" /root/source.tar.gz
+
+# Extract the tarball inside the container
+pct exec $VM_ID -- bash -c "\
+  cd /root && \
+  tar -xzf source.tar.gz && \
+  rm source.tar.gz"
 
 # Run the build script inside the container
 pct exec $VM_ID -- bash -c "\
@@ -153,8 +164,6 @@ pct exec $VM_ID -- bash -c "\
   mv /root/deploy/videoprocessor.service /etc/systemd/system/videoprocessor.service && \
   systemctl enable videoprocessor && \
   systemctl start videoprocessor"
-
-
 
 # Output success message
 echo "LXC container '$CONTAINER_NAME' has been set up successfully with VM ID $VM_ID."
