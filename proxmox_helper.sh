@@ -68,6 +68,8 @@ if [ -f "/tmp/config.json.backup" ]; then
   mv /tmp/config.json.backup /root/videoprocessor/config.json
 fi
 
+cd /root/videoprocessor
+
 # Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
 if [ ! -f "config.env" ]; then
   echo "config.env not found. Generating default config.env from config.env.example..."
@@ -96,8 +98,6 @@ fi
 
 # Find the next available VM ID
 VM_ID=$(find_next_vm_id)
-
-cd /root/videoprocessor
 
 # Run the build script to prepare the deployment package
 if [ -x "./build.sh" ]; then
