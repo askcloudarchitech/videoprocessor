@@ -99,6 +99,12 @@ fi
 # Find the next available VM ID
 VM_ID=$(find_next_vm_id)
 
+# Ensure the mount point directory exists before adding the NFS share to /etc/fstab
+if [ ! -d "/mnt/$CONTAINER_NAME-nfs" ]; then
+  echo "Creating mount point directory: /mnt/$CONTAINER_NAME-nfs"
+  mkdir -p "/mnt/$CONTAINER_NAME-nfs"
+fi
+
 # Add the NFS share to /etc/fstab on the Proxmox host
 fstab_entry="$NFS_SERVER:$NFS_PATH /mnt/$CONTAINER_NAME-nfs nfs defaults 0 0"
 if ! grep -Fxq "$fstab_entry" /etc/fstab; then
@@ -110,9 +116,6 @@ else
   echo "NFS share is already in /etc/fstab."
 fi
 
-# Add a bind mount to the LXC container using the standard `pct set` command
-pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT
-
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE \
   -hostname "$CONTAINER_NAME" \
@@ -121,6 +124,9 @@ pct create $VM_ID local:vztmpl/$TEMPLATE \
   -rootfs "$STORAGE:8" \
   -memory 2048 \
   -cores 2
+
+# Add a bind mount to the LXC container using the standard `pct set` command
+pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT
 
 # Start the container
 pct start $VM_ID
