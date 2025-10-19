@@ -110,6 +110,29 @@ if [ ! -f "config.json" ]; then
   exit 1
 fi
 
+# Remove any old direct NFS mount attempt from the LXC container configuration
+container_config="/etc/pve/lxc/$VM_ID.conf"
+sed -i '/mp0:/d' "$container_config"
+
+# Add the NFS share to /etc/fstab on the Proxmox host
+fstab_entry="$NFS_SERVER:$NFS_PATH /mnt/$CONTAINER_NAME-nfs nfs defaults 0 0"
+if ! grep -Fxq "$fstab_entry" /etc/fstab; then
+  echo "Adding NFS share to /etc/fstab..."
+  echo "$fstab_entry" >> /etc/fstab
+  mount -a
+else
+  echo "NFS share is already in /etc/fstab."
+fi
+
+# Add a bind mount to the LXC container configuration
+bind_mount="mp0: /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT"
+if ! grep -Fxq "$bind_mount" "$container_config"; then
+  echo "Adding bind mount to container configuration: $container_config"
+  echo "$bind_mount" >> "$container_config"
+else
+  echo "Bind mount is already in the container configuration."
+fi
+
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE \
   -hostname "$CONTAINER_NAME" \
@@ -127,9 +150,7 @@ pct exec $VM_ID -- bash -c "\
   apt-get update && \
   apt-get install -y curl build-essential golang nodejs npm nfs-common && \
   npm install -g esbuild && \
-  mkdir -p $NFS_MOUNT && \
-  echo '$NFS_SERVER:$NFS_PATH $NFS_MOUNT nfs defaults 0 0' >> /etc/fstab && \
-  mount -a"
+  mkdir -p $NFS_MOUNT"
 
 # Copy application files to the container
 pct push $VM_ID ./deploy /root/deploy --recursive
