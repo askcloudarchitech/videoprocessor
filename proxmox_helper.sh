@@ -104,6 +104,7 @@ fstab_entry="$NFS_SERVER:$NFS_PATH /mnt/$CONTAINER_NAME-nfs nfs defaults 0 0"
 if ! grep -Fxq "$fstab_entry" /etc/fstab; then
   echo "Adding NFS share to /etc/fstab..."
   echo "$fstab_entry" >> /etc/fstab
+  systemctl daemon-reload
   mount -a
 else
   echo "NFS share is already in /etc/fstab."
