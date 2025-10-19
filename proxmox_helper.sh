@@ -99,17 +99,6 @@ fi
 # Find the next available VM ID
 VM_ID=$(find_next_vm_id)
 
-chmod u+x ./build.sh
-
-# Run the build script to prepare the deployment package
-if [ -x "./build.sh" ]; then
-  echo "Running build.sh to prepare the deployment package..."
-  ./build.sh
-else
-  echo "Error: build.sh is not executable or not found. Please ensure it exists and is executable."
-  exit 1
-fi
-
 # Add the NFS share to /etc/fstab on the Proxmox host
 fstab_entry="$NFS_SERVER:$NFS_PATH /mnt/$CONTAINER_NAME-nfs nfs defaults 0 0"
 if ! grep -Fxq "$fstab_entry" /etc/fstab; then
