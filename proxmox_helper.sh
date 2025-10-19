@@ -135,10 +135,6 @@ pct create $VM_ID local:vztmpl/$TEMPLATE \
 # Start the container
 pct start $VM_ID
 
-# Push application files to the container before executing commands
-pct push $VM_ID ./deploy /root/deploy --recursive
-pct push $VM_ID ./config.json /root/deploy/config.json
-
 # Install dependencies inside the container
 pct exec $VM_ID -- bash -c "\
   apt-get update && \
@@ -147,11 +143,22 @@ pct exec $VM_ID -- bash -c "\
 # Pass the NFS_MOUNT environment variable to the application
 pct exec $VM_ID -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
 
+# Copy the source code into the container
+pct push $VM_ID ./ /root --recursive
+
+# Run the build script inside the container
+pct exec $VM_ID -- bash -c "\
+  cd /root && \
+  chmod +x build.sh && \
+  ./build.sh"
+
 # Set up the application as a systemd service
 pct exec $VM_ID -- bash -c "\
   mv /root/deploy/videoprocessor.service /etc/systemd/system/videoprocessor.service && \
   systemctl enable videoprocessor && \
   systemctl start videoprocessor"
+
+
 
 # Output success message
 echo "LXC container '$CONTAINER_NAME' has been set up successfully with VM ID $VM_ID."
