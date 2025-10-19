@@ -22,7 +22,7 @@ find_next_vm_id() {
 ensure_template() {
   echo "ensure_template called with TEMPLATE: '$TEMPLATE'"
   echo "Checking for template: '$TEMPLATE'"
-  if ! pveam list local | awk '{print $2}' | grep -Fxq "$TEMPLATE"; then
+  if ! pveam list local | grep -Fxq "$TEMPLATE"; then
     echo "Template $TEMPLATE not found. Downloading..."
     pveam update
     pveam download local "$TEMPLATE"
