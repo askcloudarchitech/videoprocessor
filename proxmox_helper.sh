@@ -40,11 +40,6 @@ if [ -f "/root/videoprocessor/config.env" ]; then
   cp /root/videoprocessor/config.env /tmp/config.env.backup
 fi
 
-if [ -f "/root/videoprocessor/config.json" ]; then
-  echo "Backing up existing config.json..."
-  cp /root/videoprocessor/config.json /tmp/config.json.backup
-fi
-
 # Always re-download the repository to ensure updates
 if [ -d "/root/videoprocessor" ]; then
   echo "Removing old repository..."
@@ -63,11 +58,6 @@ if [ -f "/tmp/config.env.backup" ]; then
   mv /tmp/config.env.backup /root/videoprocessor/config.env
 fi
 
-if [ -f "/tmp/config.json.backup" ]; then
-  echo "Restoring config.json..."
-  mv /tmp/config.json.backup /root/videoprocessor/config.json
-fi
-
 cd /root/videoprocessor
 
 # Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
@@ -79,12 +69,17 @@ if [ ! -f "config.env" ]; then
 fi
 source config.env
 
-# Ensure config.json exists early as well
-if [ ! -f "config.json" ]; then
-  echo "config.json not found. Generating default config.json from config.json.example..."
-  cp config.json.example config.json
-  echo "Please edit the generated config.json file to match your environment before proceeding."
-  exit 1
+# Ensure the directory for persistent config storage exists on the host
+persistent_config_dir="/mnt/$CONTAINER_NAME-config"
+if [ ! -d "$persistent_config_dir" ]; then
+  echo "Creating persistent config directory: $persistent_config_dir"
+  mkdir -p "$persistent_config_dir"
+fi
+
+# Ensure the config.json file exists in the persistent directory
+if [ ! -f "$persistent_config_dir/config.json" ]; then
+  echo "Creating default config.json in persistent storage..."
+  cp config.json.example "$persistent_config_dir/config.json"
 fi
 
 # Check if a container with the name already exists
@@ -127,6 +122,9 @@ pct create $VM_ID local:vztmpl/$TEMPLATE \
 
 # Add a bind mount to the LXC container using the standard `pct set` command
 pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT
+
+# Add a bind mount for config.json to the LXC container
+pct set $VM_ID -mp1 $persistent_config_dir/config.json,mp=/root/deploy/config.json
 
 # Start the container
 pct start $VM_ID
