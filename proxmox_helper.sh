@@ -123,9 +123,6 @@ pct create $VM_ID local:vztmpl/$TEMPLATE \
 # Add a bind mount to the LXC container using the standard `pct set` command
 pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=$NFS_MOUNT
 
-# Add a bind mount for config.json to the LXC container
-pct set $VM_ID -mp1 $persistent_config_dir/config.json,mp=/root/deploy/config.json
-
 # Start the container
 pct start $VM_ID
 
@@ -162,6 +159,9 @@ pct exec $VM_ID -- bash -c "\
   mv /root/deploy/videoprocessor.service /etc/systemd/system/videoprocessor.service && \
   systemctl enable videoprocessor && \
   systemctl start videoprocessor"
+
+# Add a bind mount for config.json to the LXC container
+pct set $VM_ID -mp1 $persistent_config_dir/config.json,mp=/root/deploy/config.json
 
 # Output success message
 echo "LXC container '$CONTAINER_NAME' has been set up successfully with VM ID $VM_ID."
