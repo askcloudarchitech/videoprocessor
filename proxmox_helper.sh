@@ -129,12 +129,22 @@ pct start $VM_ID
 # Install dependencies inside the container
 pct exec $VM_ID -- bash -c "\
   apt-get update && \
-  apt-get install -y curl build-essential golang-1.24 nodejs npm nfs-common && \
+  apt-get install -y curl build-essential nodejs npm nfs-common && \
   curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
   apt-get install -y nodejs"
 
 # Pass the NFS_MOUNT environment variable to the application
 pct exec $VM_ID -- bash -c "echo 'Environment=NFS_MOUNT=$NFS_MOUNT' >> /etc/systemd/system/videoprocessor.service"
+
+# Install Go 1.24.1 manually inside the container
+pct exec $VM_ID -- bash -c "\
+  curl -LO https://go.dev/dl/go1.24.1.linux-amd64.tar.gz && \
+  rm -rf /usr/local/go && \
+  tar -C /usr/local -xzf go1.24.1.linux-amd64.tar.gz && \
+  rm go1.24.1.linux-amd64.tar.gz && \
+  echo 'export PATH=\"$PATH:/usr/local/go/bin\"' >> /etc/profile && \
+  source /etc/profile && \
+  go version"
 
 # Create a tarball of the source code
 source_tarball="/tmp/source.tar.gz"
