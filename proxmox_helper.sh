@@ -22,12 +22,24 @@ find_next_vm_id() {
 ensure_template() {
   echo "ensure_template called with TEMPLATE: '$TEMPLATE'"
   echo "Checking for template: '$TEMPLATE'"
-  if ! pveam list local | grep -Fxq "$TEMPLATE"; then
-    echo "Template $TEMPLATE not found. Downloading..."
+
+  # Prefer checking the local template cache which is the definitive location for downloaded templates
+  TEMPLATE_PATH="/var/lib/vz/template/cache/$TEMPLATE"
+
+  if [ -f "$TEMPLATE_PATH" ]; then
+    echo "Template $TEMPLATE is already available at $TEMPLATE_PATH."
+    return 0
+  fi
+
+  # If not present in cache, check pveam listing (use fixed-string match, not whole-line)
+  if pveam list local | grep -Fq "$TEMPLATE"; then
+    echo "Template $TEMPLATE is listed by pveam but not present in cache; attempting to ensure it's downloaded to cache..."
+    pveam update
+    pveam download local "$TEMPLATE" || echo "Warning: pveam download returned non-zero status; continuing."
+  else
+    echo "Template $TEMPLATE not found in cache or pveam list. Downloading..."
     pveam update
     pveam download local "$TEMPLATE"
-  else
-    echo "Template $TEMPLATE is already available."
   fi
 }
 
