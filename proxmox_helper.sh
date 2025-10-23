@@ -70,8 +70,7 @@ cd /root/videoprocessor
 if [ ! -f "/root/videoprocessorconfig/config.env" ]; then
   echo "config.env not found. Generating default config.env from config.env.example..."
   cp config.env.example /root/videoprocessorconfig/config.env
-  echo "Please edit the generated config.env file to match your environment before proceeding."
-  exit 1
+  echo "Please edit the generated config.env file to match your environment."
 fi
 source /root/videoprocessorconfig/config.env
 
