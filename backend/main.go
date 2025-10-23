@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -142,67 +140,22 @@ func (lr *LogReceiver) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 var logReceiver = NewLogReceiver()
 
 // Global variable to store the NFS mount path
-var nfsMountPath string
-
-func init() {
-	nfsMountPath = os.Getenv("NFS_MOUNT")
-	if nfsMountPath == "" {
-		log.Fatalf("NFS_MOUNT environment variable is not set. Please configure it in config.env.")
-	}
-}
+var nfsMountPath string = "/media/nfs"
 
 // Updated getDestinationPath to use the dynamic NFS mount path
 func getDestinationPath(subPath string) (string, error) {
 	return filepath.Join(nfsMountPath, "video_archive", subPath), nil
 }
 
-// checkAndMountNFS checks if the NFS mount is established and mounts it if necessary.
-func checkAndMountNFS() error {
-	// Load NFS configuration from environment variables
-	nfsServerIP := os.Getenv("NFS_SERVER")
-	nfsServerPath := os.Getenv("NFS_PATH")
-	nfsMountPoint := os.Getenv("NFS_MOUNT")
-
-	if nfsServerIP == "" || nfsServerPath == "" || nfsMountPoint == "" {
-		return fmt.Errorf("NFS configuration is missing. Ensure NFS_SERVER, NFS_PATH, and NFS_MOUNT are set in the environment")
-	}
-
-	// Check if the mount point is already mounted
-	cmd := exec.Command("mountpoint", "-q", nfsMountPoint)
-	if err := cmd.Run(); err == nil {
-		logReceiver.Log("NFS mount already established at %s", nfsMountPoint)
-		return nil
-	}
-
-	// Attempt to establish the NFS mount
-	logReceiver.Log("NFS mount not found. Attempting to mount %s:%s to %s",
-		nfsServerIP, nfsServerPath, nfsMountPoint)
-
-	mountCmd := exec.Command("sudo", "mount", "-t", "nfs",
-		nfsServerIP+":"+nfsServerPath, nfsMountPoint)
-	output, err := mountCmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to mount NFS: %v\nOutput: %s", err, string(output))
-	}
-
-	logReceiver.Log("Successfully mounted NFS at %s", nfsMountPoint)
-	return nil
-}
-
 func main() {
 	// Load configuration at startup
-	configPath := "config.json"
+	configPath := "/root/config/config.json"
 	if err := loadConfig(configPath); err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
 
 	// Start the log receiver
 	logReceiver.Start()
-
-	// Check and establish NFS mount
-	if err := checkAndMountNFS(); err != nil {
-		log.Fatalf("Error establishing NFS mount: %v", err)
-	}
 
 	// Start the combined server (declared in web.go)
 	go StartServer()

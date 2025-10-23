@@ -16,6 +16,7 @@ cd ..
 
 # Step 2: Build the React frontend
 echo "Building React frontend..."
+source /etc/profile
 if [ -d "$DIST_DIR" ]; then
   rm -rf "$DIST_DIR"
 fi
