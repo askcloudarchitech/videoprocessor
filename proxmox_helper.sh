@@ -67,7 +67,7 @@ rm /tmp/videoprocessor.tar.gz
 cd /root/videoprocessor
 
 # Load configuration from external file early to ensure variables like $CONTAINER_NAME are available
-if [ ! -f "config.env" ]; then
+if [ ! -f "/root/videoprocessorconfig/config.env" ]; then
   echo "config.env not found. Generating default config.env from config.env.example..."
   cp config.env.example /root/videoprocessorconfig/config.env
   echo "Please edit the generated config.env file to match your environment before proceeding."
