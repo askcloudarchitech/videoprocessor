@@ -111,6 +111,7 @@ fi
 
 # Create LXC container
 pct create $VM_ID local:vztmpl/$TEMPLATE \
+  -unprivileged 0 \
   -hostname "$CONTAINER_NAME" \
   -storage "$STORAGE" \
   -net0 name=eth0,bridge=vmbr0,ip=dhcp \
@@ -123,6 +124,9 @@ pct set $VM_ID -mp0 /mnt/$CONTAINER_NAME-nfs,mp=/media/nfs
 
 # Add a bind mount for config.json to the LXC container
 pct set $VM_ID -mp1 /root/videoprocessorconfig,mp=/root/config
+
+#mount /dev/disk/ inside the container
+pct set $VM_ID -mp2 /dev/disk/,mp=/dev/disk/
 
 # Start the container
 pct start $VM_ID
